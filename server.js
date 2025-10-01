@@ -1,9 +1,11 @@
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
+// const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const database = require('./config/database');
+const { verifyTokenMiddleware } = require("./auth.js");
+
 
 // Import routes
 const puzzleRoutes = require('./routes/puzzles');
@@ -13,7 +15,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Security middleware
-app.use(helmet());
+// app.use(helmet());
 app.use(cors());
 
 // Rate limiting
@@ -29,10 +31,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Routes
-app.use('/api/puzzles', puzzleRoutes);
-app.use('/api/stats', statRoutes);
 
 // Admin panel route
 app.get('/admin', (req, res) => {
@@ -57,6 +55,11 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
+
+// Routes
+app.use(verifyTokenMiddleware);
+app.use('/api/puzzles', puzzleRoutes);
+app.use('/api/stats', statRoutes);
 
 // Initialize database and start server
 database.init().then(() => {
