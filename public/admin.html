@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pica Centro Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .clue-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .clue-label {
+            grid-column: 1 / -1;
+        }
+        
+        .clue-input {
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #27ae60, #229954);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 600;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e1e8ed;
+        }
+        
+        th {
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-sm {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Pica Centro Admin Panel</h1>
+            <p>Manage puzzles and view game statistics</p>
+        </div>
+        
+        <div class="content">
+            <!-- Puzzle Management Section -->
+            <div class="card">
+                <h2>Create New Puzzle</h2>
+                <form id="puzzleForm">
+                    <div class="form-group">
+                        <label for="puzzleDate">Date:</label>
+                        <input type="date" id="puzzleDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Clues (4 clues, 4 digits each):</label>
+                        <div id="cluesContainer">
+                            <!-- Clue inputs will be generated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Solution (4 unique digits):</label>
+                        <div id="solutionContainer" class="clue-row"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Pica Counts (four boxes, 0-4):</label>
+                        <div id="picasContainer" class="clue-row"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Centro Counts (four boxes, 0-4):</label>
+                        <div id="centrosContainer" class="clue-row"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="hint">Hint [position, digit]:</label>
+                        <input type="text" id="hint" placeholder="e.g., 2,5" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="difficulty">Difficulty:</label>
+                        <select id="difficulty">
+                            <option value="easy">Easy</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">
+                        <span>✓</span> Create Puzzle
+                    </button>
+                </form>
+                
+                <div id="formMessage"></div>
+            </div>
+            
+            <!-- Statistics Section -->
+            <div class="card">
+                <h2>Game Statistics</h2>
+                <div class="stats-grid" id="statsGrid">
+                    <!-- Stats will be loaded here -->
+                </div>
+                
+                <button data-role="refresh-stats" class="btn" style="margin-top: 20px;">
+                    <span>🔄</span> Refresh Stats
+                </button>
+            </div>
+            
+            <!-- Puzzle List Section -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>Existing Puzzles</h2>
+                <div id="puzzlesList">
+                    <!-- Puzzles will be loaded here -->
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button data-role="refresh-list" class="btn">
+                        <span>🔄</span> Refresh List
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/admin.js" defer></script>
+</body>
+</html>
