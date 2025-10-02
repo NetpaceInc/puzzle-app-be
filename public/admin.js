@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeSolutionPicasCentros();
     setupFormHandlers();
     setupButtons();
-    setDefaultDateToTomorrow();
+    // setDefaultDateToTomorrow();
     loadStats();
     loadPuzzles();
 });
