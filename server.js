@@ -4,12 +4,13 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const database = require('./config/database');
-const { verifyTokenMiddleware } = require("./auth.js");
+const { verifyTokenMiddleware } = require("./middleware/auth.js");
 
 
 // Import routes
 const puzzleRoutes = require('./routes/puzzles');
 const statRoutes = require('./routes/stats');
+const tokenRoutes = require('./routes/token');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -50,16 +51,18 @@ app.use((err, req, res, next) => {
     message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
   });
 });
+app.use('/api/token', tokenRoutes);
+// Routes
+app.use(verifyTokenMiddleware);
+app.use('/api/puzzles', puzzleRoutes);
+app.use('/api/stats', statRoutes);
 
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Routes
-app.use(verifyTokenMiddleware);
-app.use('/api/puzzles', puzzleRoutes);
-app.use('/api/stats', statRoutes);
+
 
 // Initialize database and start server
 database.init().then(() => {

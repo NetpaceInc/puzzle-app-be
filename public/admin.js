@@ -1,4 +1,7 @@
 // Admin Panel Logic (migrated from inline script)
+let authToken = null;
+let currentPage = 1;
+let pageLimit = 10;
 
 function initializeClues() {
     const container = document.getElementById('cluesContainer');
@@ -107,6 +110,28 @@ function initializeSolutionPicasCentros() {
             centrosContainer.appendChild(input);
         }
     }
+
+    const hintContainer = document.getElementById('hintContainer');
+    if (hintContainer) {
+        hintContainer.innerHTML = '';
+        for (let j = 0; j < 2; j++) {
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = '0';
+            input.max = '9';
+            input.className = 'clue-input';
+            input.placeholder = String(j + 1);
+            input.addEventListener('input', () => {
+                const digit = (input.value || '').replace(/\D+/g, '').slice(0, 1);
+                let num = parseInt(digit || '');
+                if (isNaN(num)) { input.value = ''; return; }
+                if (num < 0) num = 0;
+                if (num > 4) num = 4;
+                input.value = String(num);
+            });
+            hintContainer.appendChild(input);
+        }
+    }
 }
 
 function getFormData() {
@@ -126,6 +151,8 @@ function getFormData() {
         .map(el => parseInt(el.value));
     const centro = Array.from(document.querySelectorAll('#centrosContainer .clue-input'))
         .map(el => parseInt(el.value));
+    const hints = Array.from(document.querySelectorAll('#hintContainer .clue-input'))
+        .map(el => parseInt(el.value));
 
     return {
         date: document.getElementById('puzzleDate').value,
@@ -133,8 +160,7 @@ function getFormData() {
         solution,
         picas,
         centro,
-        hint: document.getElementById('hint').value.split(',').map(Number),
-        difficulty: document.getElementById('difficulty').value
+        hint: hints
     };
 }
 
@@ -152,7 +178,7 @@ function showMessage(message, type = 'success') {
 
 async function loadStats() {
     try {
-        const response = await fetch('/api/stats');
+        const response = await apiFetch('/api/stats');
         const stats = await response.json();
 
         const statsGrid = document.getElementById('statsGrid');
@@ -167,8 +193,8 @@ async function loadStats() {
                 <div class="stat-label">Avg Solve Time</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">${stats.overall.players}</div>
-                <div class="stat-label">Total Players</div>
+                <div class="stat-value">${stats.overall.puzzles}</div>
+                <div class="stat-label">Total Puzzles</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value">${stats.overall.avg_attempts}</div>
@@ -183,47 +209,97 @@ async function loadStats() {
 function buildPuzzleRowActions(id) {
     return `
         <div class="actions">
-            <button class="btn btn-sm" data-action="edit" data-id="${id}">✏️ Edit</button>
+           
             <button class="btn btn-sm btn-danger" data-action="delete" data-id="${id}">🗑️ Delete</button>
         </div>
     `;
 }
 
-async function loadPuzzles() {
+async function fetchToken() {
     try {
-        const response = await fetch('/api/puzzles');
+      const response = await fetch('/api/token');
+      const data = await response.json();
+      authToken = data.token;
+      console.log('Token acquired:', authToken);
+    } catch (err) {
+      console.error('Error fetching token:', err);
+    }
+  }
+
+  async function apiFetch(url, options = {}) {
+    if (!authToken) {
+      await fetchToken(); // get token first if missing
+    }
+  
+    // Don’t attach token if it’s the token endpoint
+    if (!url.includes('/api/token')) {
+      options.headers = {
+        ...(options.headers || {}),
+        'Authorization': `Bearer ${authToken}`
+      };
+    }
+  
+  const separator = url.includes('?') ? '&' : '?';
+  const urlWithToken = `${url}${separator}token=${authToken}`;
+
+  return fetch(urlWithToken, options);
+  }
+
+  function isToday(dateStr) {
+    const puzzleDate = new Date(dateStr);
+    const today = new Date();
+  
+    return (
+      puzzleDate.getFullYear() === today.getFullYear() &&
+      puzzleDate.getMonth() === today.getMonth() &&
+      puzzleDate.getDate() === today.getDate()
+    );
+  }
+  
+
+async function loadPuzzles(page = 1) {
+    try {
+        const response = await apiFetch(`/api/puzzles?page=${page}&limit=${pageLimit}`);
         const data = await response.json();
+
+        const puzzles = data.data;
+        const pagination = data;
 
         const puzzlesList = document.getElementById('puzzlesList');
         if (!puzzlesList) return;
+
         puzzlesList.innerHTML = `
             <table>
                 <thead>
                     <tr>
                         <th>ID</th>
                         <th>Date</th>
-                        <th>Difficulty</th>
                         <th>Status</th>
                         <th>Created</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${data.puzzles.map(puzzle => `
+                    ${puzzles.map(puzzle => `
                         <tr>
                             <td>${puzzle.id}</td>
-                            <td>${puzzle.date}</td>
-                            <td>${puzzle.difficulty}</td>
-                            <td>${puzzle.is_active ? '🟢 Active' : '🔴 Inactive'}</td>
+                            <td>${new Date(puzzle.date).toLocaleDateString()}</td>
+                            <td>${isToday(puzzle.date) ? '🟢 Active' : '🔴 Inactive'}</td>
                             <td>${new Date(puzzle.created_at).toLocaleDateString()}</td>
                             <td class="actions">${buildPuzzleRowActions(puzzle.id)}</td>
                         </tr>
                     `).join('')}
                 </tbody>
             </table>
+
+            <div id="paginationControls" class="pagination">
+                <button class='btn btn-sm' ${pagination.page === 1 ? 'disabled' : ''} data-page="${pagination.page - 1}">Prev</button>
+                <span>Page ${pagination.page} of ${pagination.totalPages}</span>
+                <button class='btn btn-sm' ${pagination.page === pagination.totalPages ? 'disabled' : ''} data-page="${pagination.page + 1}">Next</button>
+            </div>
         `;
 
-        // Delegate actions
+        // Delegate table actions
         puzzlesList.querySelector('tbody').addEventListener('click', async (e) => {
             const target = e.target.closest('button');
             if (!target) return;
@@ -231,10 +307,20 @@ async function loadPuzzles() {
             const id = target.getAttribute('data-id');
             if (action === 'delete') {
                 await deletePuzzle(id);
+                loadPuzzles(currentPage); // reload after delete
             } else if (action === 'edit') {
                 await editPuzzle(id);
             }
-        }, { once: true });
+        });
+
+        // Delegate pagination actions
+        document.getElementById('paginationControls').addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-page]');
+            if (!btn) return;
+            currentPage = parseInt(btn.getAttribute('data-page'));
+            loadPuzzles(currentPage);
+        });
+
     } catch (error) {
         console.error('Error loading puzzles:', error);
     }
@@ -243,9 +329,10 @@ async function loadPuzzles() {
 async function deletePuzzle(id) {
     if (!confirm('Delete this puzzle?')) return;
     try {
-        const res = await fetch(`/api/puzzles/${id}`, { method: 'DELETE' });
+        const res = await apiFetch(`/api/puzzles/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('Delete failed');
         await loadPuzzles();
+        await loadStats();
         showMessage('Puzzle deleted');
     } catch (e) {
         showMessage('Error deleting puzzle: ' + e.message, 'error');
@@ -297,7 +384,7 @@ function setupFormHandlers() {
             const method = isEditing ? 'PUT' : 'POST';
             const url = isEditing ? `/api/puzzles/${form.dataset.editId}` : '/api/puzzles';
 
-            const response = await fetch(url, {
+            const response = await apiFetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(puzzleData)
@@ -309,6 +396,7 @@ function setupFormHandlers() {
                 form.reset();
                 delete form.dataset.editId;
                 initializeClues();
+                loadStats();
                 loadPuzzles();
             } else {
                 showMessage(result.error || 'Request failed', 'error');

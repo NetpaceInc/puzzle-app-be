@@ -216,6 +216,10 @@
             padding: 8px 12px;
             font-size: 14px;
         }
+
+        .pagination {
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -248,28 +252,28 @@
                     </div>
                     
                     <div class="form-group">
-                        <label>Pica Counts (four boxes, 0-4):</label>
+                        <label>Pica Counts:</label>
                         <div id="picasContainer" class="clue-row"></div>
                     </div>
                     
                     <div class="form-group">
-                        <label>Centro Counts (four boxes, 0-4):</label>
+                        <label>Centro Counts:</label>
                         <div id="centrosContainer" class="clue-row"></div>
                     </div>
                     
                     <div class="form-group">
                         <label for="hint">Hint [position, digit]:</label>
-                        <input type="text" id="hint" placeholder="e.g., 2,5" required>
+                        <div id="hintContainer" class="clue-row"></div>
                     </div>
                     
-                    <div class="form-group">
+                    <!-- <div class="form-group">
                         <label for="difficulty">Difficulty:</label>
                         <select id="difficulty">
                             <option value="easy">Easy</option>
                             <option value="medium" selected>Medium</option>
                             <option value="hard">Hard</option>
                         </select>
-                    </div>
+                    </div> -->
                     
                     <button type="submit" class="btn btn-success">
                         <span>✓</span> Create Puzzle
@@ -286,9 +290,6 @@
                     <!-- Stats will be loaded here -->
                 </div>
                 
-                <button data-role="refresh-stats" class="btn" style="margin-top: 20px;">
-                    <span>🔄</span> Refresh Stats
-                </button>
             </div>
             
             <!-- Puzzle List Section -->
@@ -298,11 +299,7 @@
                     <!-- Puzzles will be loaded here -->
                 </div>
                 
-                <div style="text-align: center; margin-top: 20px;">
-                    <button data-role="refresh-list" class="btn">
-                        <span>🔄</span> Refresh List
-                    </button>
-                </div>
+                <div id="paginationControls" class="pagination"></div>
             </div>
         </div>
     </div>

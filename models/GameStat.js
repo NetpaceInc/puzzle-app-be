@@ -33,11 +33,8 @@ class GameStat {
     // Overall stats
     const overallStats = await database.get(`
       SELECT 
-        COUNT(*)::int as players,
-        AVG(solve_time) as avg_solve_time,
-        AVG(attempts) as avg_attempts
-      FROM game_stats 
-      WHERE completed = TRUE
+        COUNT(*)::int as puzzles
+      FROM puzzles 
     `);
 
     // Recent puzzle completion rates
@@ -59,7 +56,7 @@ class GameStat {
         avg_attempts: Math.round((todayStats.avg_attempts || 0) * 100) / 100
       },
       overall: {
-        players: overallStats.players || 0,
+        puzzles: overallStats.puzzles || 0,
         avg_solve_time: Math.round((overallStats.avg_solve_time || 0) * 100) / 100,
         avg_attempts: Math.round((overallStats.avg_attempts || 0) * 100) / 100
       },

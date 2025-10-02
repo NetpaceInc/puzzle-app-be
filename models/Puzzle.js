@@ -45,6 +45,22 @@ class Puzzle {
     return this.formatPuzzle(puzzle);
   }
 
+
+  static async getAllWithCount(page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+    const puzzles = await database.all(
+      'SELECT * FROM puzzles ORDER BY date DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
+    );
+    const totalResult = await database.get('SELECT COUNT(*) as count FROM puzzles');
+    const total = Number(totalResult.count);
+
+    return {
+      rows: puzzles.map(this.formatPuzzle),
+      count: total,
+    };
+  }
+  
   static async getByDate(date) {
     const puzzle = await database.get(
       'SELECT * FROM puzzles WHERE date = $1 AND is_active = TRUE',

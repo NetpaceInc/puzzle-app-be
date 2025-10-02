@@ -9,6 +9,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const { date } = req.query;
+
     if (date) {
       const puzzle = await Puzzle.getByDateAnyStatus(date);
       if (!puzzle) {
@@ -17,14 +18,24 @@ router.get('/', async (req, res) => {
       return res.json(puzzle);
     }
 
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const result = await Puzzle.getAll(page, limit);
-    res.json(result);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+
+    // Assuming Puzzle.getAllWithCount returns { rows, count }
+    const { rows, count } = await Puzzle.getAllWithCount(page, limit);
+
+    res.json({
+      data: rows,
+      page,
+      limit,
+      total: count,
+      totalPages: Math.ceil(count / limit),
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // Get today's puzzle for mobile app
 router.get('/today', async (req, res) => {

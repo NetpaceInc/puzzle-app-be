@@ -25,6 +25,7 @@ function decryptAesGcmToken(token, passphrase) {
 }
 
 export function verifyTokenMiddleware(req, res, next) {
+  
   const token = req.query.token; // from query param
   if (!token) {
     return res.status(401).json({ error: "Missing token" });
