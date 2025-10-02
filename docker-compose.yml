@@ -26,8 +26,9 @@ services:
       PGPASSWORD: postgres
       PGDATABASE: puzzle_app
       NODE_ENV: production
+      PORT: 8023
     ports:
-      - "3000:3000"
+      - "8023:8023"
     restart: unless-stopped
 
 volumes:

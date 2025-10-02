@@ -126,7 +126,7 @@ function initializeSolutionPicasCentros() {
                 let num = parseInt(digit || '');
                 if (isNaN(num)) { input.value = ''; return; }
                 if (num < 0) num = 0;
-                if (num > 4) num = 4;
+                if (num > 9) num = 9;
                 input.value = String(num);
             });
             hintContainer.appendChild(input);
