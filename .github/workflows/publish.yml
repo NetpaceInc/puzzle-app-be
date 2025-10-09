@@ -1,0 +1,30 @@
+name: Build and Publish Docker to GHCR
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  packages: write   # IMPORTANT: gives workflow permission to push packages
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}  # automatically available
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/puzzle-app-app:latest
+            ghcr.io/${{ github.repository_owner }}/puzzle-app-app:${{ github.sha }}
