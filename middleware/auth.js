@@ -32,7 +32,7 @@ export function verifyTokenMiddleware(req, res, next) {
   }
 
   try {
-    const timestamp = decryptAesGcmToken(token, "pica-netpace");
+    const timestamp = decryptAesGcmToken(token, "picanetpace");
     const now = Date.now();
     if (now - timestamp <= 5 * 60 * 1000) {
       return next(); // ✅ valid, continue

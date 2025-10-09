@@ -242,7 +242,7 @@
                 <form id="puzzleForm">
                     <div class="form-group">
                         <label for="puzzleDate">Date:</label>
-                        <input type="date" id="puzzleDate" required>
+                        <input type="date" id="puzzleDate" required min="">
                     </div>
                     
                     <div class="form-group">
@@ -268,18 +268,9 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="hint">Hint [position, digit]:</label>
+                        <label for="hint">Hints:</label>
                         <div id="hintContainer" class="clue-row"></div>
                     </div>
-                    
-                    <!-- <div class="form-group">
-                        <label for="difficulty">Difficulty:</label>
-                        <select id="difficulty">
-                            <option value="easy">Easy</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="hard">Hard</option>
-                        </select>
-                    </div> -->
                     
                     <button type="submit" class="btn btn-success">
                         <span>✓</span> Create Puzzle

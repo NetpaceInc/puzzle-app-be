@@ -3,7 +3,7 @@ const crypto = require("crypto");
 
 const router = express.Router();
 
-const PASSPHRASE = "pica-netpace";
+const PASSPHRASE = "picanetpace";
 
 // --- Helpers ---
 function deriveKey(passphrase) {

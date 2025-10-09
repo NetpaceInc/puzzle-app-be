@@ -10,6 +10,19 @@ class Puzzle {
       throw new Error(`Validation failed: ${message}`);
     }
 
+    // Check if solution contains any hint digits
+    const hintDigit = puzzleData.hint[1]; // hint is [position, digit]
+    if (puzzleData.solution.includes(hintDigit)) {
+      throw new Error(`Hint cannot be in the answer: digit ${hintDigit} appears in the solution [${puzzleData.solution.join(', ')}]`);
+    }
+
+    // Check if hint digit appears in any of the clues
+    const clueDigits = new Set(puzzleData.clues.flat());
+    if (!clueDigits.has(hintDigit)) {
+      const availableDigits = Array.from(clueDigits).sort().join(', ');
+      throw new Error(`Hint digit ${hintDigit} is not present in any of the clues. Available digits: ${availableDigits}`);
+    }
+
     // Check if puzzle for date already exists (any status)
     const existing = await database.get(
       'SELECT id FROM puzzles WHERE date = $1',
@@ -112,6 +125,19 @@ class Puzzle {
       const detail = error.details && error.details[0];
       const message = detail && detail.message ? detail.message : error.message;
       throw new Error(`Validation failed: ${message}`);
+    }
+
+    // Check if solution contains any hint digits
+    const hintDigit = updatedData.hint[1]; // hint is [position, digit]
+    if (updatedData.solution.includes(hintDigit)) {
+      throw new Error(`Hint cannot be in the answer: digit ${hintDigit} appears in the solution [${updatedData.solution.join(', ')}]`);
+    }
+
+    // Check if hint digit appears in any of the clues
+    const clueDigits = new Set(updatedData.clues.flat());
+    if (!clueDigits.has(hintDigit)) {
+      const availableDigits = Array.from(clueDigits).sort().join(', ');
+      throw new Error(`Hint digit ${hintDigit} is not present in any of the clues. Available digits: ${availableDigits}`);
     }
 
     const fields = [];

@@ -38,9 +38,11 @@ class Database {
     const statsTable = `
       CREATE TABLE IF NOT EXISTS game_stats (
         id SERIAL PRIMARY KEY,
+        puzzle_id INTEGER REFERENCES puzzles(id),
         puzzle_date DATE NOT NULL,
         user_id TEXT NOT NULL,
         solve_time INTEGER,
+        duration_in_seconds INTEGER,
         completed BOOLEAN DEFAULT FALSE,
         attempts INTEGER DEFAULT 1,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

@@ -16,20 +16,37 @@ const puzzleSchema = Joi.object({
   hint: Joi.array().items(Joi.number().integer()).length(2).required()
     .custom((value, helpers) => {
       const [position, digit] = value;
-      if (position < 1 || position > 4) {
-        return helpers.error('any.custom', { message: 'Hint position must be between 1 and 4' });
+      if (position < 1 || position > 9) {
+        return helpers.error('any.custom', { message: 'Hint position must be between 1 and 9' });
       }
       if (digit < 1 || digit > 9) {
         return helpers.error('any.custom', { message: 'Hint digit must be between 1 and 9' });
       }
+      if (position === digit) {
+        return helpers.error('any.custom', { message: 'Both hints cannot be the same' });
+      }
       return value;
     }),
-  date: Joi.string().isoDate().optional(),
+  date: Joi.string().isoDate().optional()
+    .custom((value, helpers) => {
+      if (value) {
+        const puzzleDate = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to start of day
+        
+        if (puzzleDate < today) {
+          return helpers.error('any.custom', { 
+            message: `Cannot create puzzle for past date: ${value}. Today is ${today.toISOString().split('T')[0]}` 
+          });
+        }
+      }
+      return value;
+    }),
   difficulty: Joi.string().valid('easy', 'medium', 'hard').optional(),
   is_active: Joi.boolean().optional()
 }).custom((value, helpers) => {
   // Validate puzzle logic consistency
-  const { clues, solution, picas, centro } = value;
+  const { clues, solution, picas, centro, hint } = value;
 
   // Ensure all solution digits appear in the clues at least once
   const clueDigits = new Set(clues.flat());
@@ -37,6 +54,22 @@ const puzzleSchema = Joi.object({
   if (missing.length > 0) {
     return helpers.error('any.custom', {
       message: `Solution contains digits not present in clues: ${missing.join(', ')}`
+    });
+  }
+
+  // Ensure hint digit appears in the clues
+  const hintDigit = hint[1]; // hint is [position, digit]
+  if (!clueDigits.has(hintDigit)) {
+    return helpers.error('any.custom', {
+      message: `Hint digit ${hintDigit} is not present in any of the clues. Available digits: ${Array.from(clueDigits).sort().join(', ')}`
+    });
+  }
+
+  // Ensure hint digit is not the same as the solution digit at that position
+  const hintPosition = hint[0] - 1; // Convert to 0-based index
+  if (solution[hintPosition] === hintDigit) {
+    return helpers.error('any.custom', {
+      message: `Hint cannot be the same as the solution: digit ${hintDigit} at position ${hint[0]} matches the solution`
     });
   }
   
@@ -90,10 +123,13 @@ function validatePuzzle(puzzle) {
 }
 
 const statSchema = Joi.object({
-  puzzle_date: Joi.string().isoDate().required(),
-  user_id: Joi.string().required(),
+  puzzle_id: Joi.number().integer().min(1).required(),
+  duration_in_seconds: Joi.number().integer().min(0).required(),
+  // Keep old fields for backward compatibility
+  puzzle_date: Joi.string().isoDate().optional(),
+  user_id: Joi.string().optional(),
   solve_time: Joi.number().integer().min(0).optional(),
-  completed: Joi.boolean().required(),
+  completed: Joi.boolean().optional(),
   attempts: Joi.number().integer().min(1).optional()
 });
 

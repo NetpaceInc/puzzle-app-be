@@ -7,6 +7,13 @@ function initializeClues() {
     const container = document.getElementById('cluesContainer');
     if (!container) return;
     container.innerHTML = '';
+    
+    // Set minimum date to today to disable previous dates
+    const puzzleDateInput = document.getElementById('puzzleDate');
+    if (puzzleDateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        puzzleDateInput.min = today;
+    }
 
     for (let i = 0; i < 4; i++) {
         const clueDiv = document.createElement('div');
@@ -117,7 +124,7 @@ function initializeSolutionPicasCentros() {
         for (let j = 0; j < 2; j++) {
             const input = document.createElement('input');
             input.type = 'number';
-            input.min = '0';
+            input.min = '1';
             input.max = '9';
             input.className = 'clue-input';
             input.placeholder = String(j + 1);
@@ -125,7 +132,7 @@ function initializeSolutionPicasCentros() {
                 const digit = (input.value || '').replace(/\D+/g, '').slice(0, 1);
                 let num = parseInt(digit || '');
                 if (isNaN(num)) { input.value = ''; return; }
-                if (num < 0) num = 0;
+                if (num < 1) num = 1;
                 if (num > 9) num = 9;
                 input.value = String(num);
             });
@@ -168,7 +175,29 @@ function showMessage(message, type = 'success') {
     const messageDiv = document.getElementById('formMessage');
     if (!messageDiv) return;
     messageDiv.className = `message ${type}`;
-    messageDiv.textContent = message;
+    
+    // Check if it's a token expired error
+    if (type === 'error' && (message.includes('Token expired') || message.includes('token expired'))) {
+        messageDiv.innerHTML = `
+            ${message}
+            <br><br>
+            <span style="color: #fff; font-weight: bold;">
+                🔄 Automatically refreshing token...
+            </span>
+        `;
+        
+        // Automatically refresh token and retry
+        setTimeout(async () => {
+            try {
+                await fetchToken();
+            } catch (error) {
+                showMessage('Failed to refresh token. Please refresh the page.', 'error');
+            }
+        }, 1000);
+    } else {
+        messageDiv.textContent = message;
+    }
+    
     messageDiv.style.display = 'block';
 
     setTimeout(() => {
@@ -185,20 +214,20 @@ async function loadStats() {
         if (!statsGrid) return;
         statsGrid.innerHTML = `
             <div class="stat-card">
-                <div class="stat-value">${stats.today.players}</div>
-                <div class="stat-label">Today's Players</div>
+                <div class="stat-value">${stats.today.avg_attempts}</div>
+                <div class="stat-label">Game Plays Today</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">${stats.today.avg_solve_time}s</div>
-                <div class="stat-label">Avg Solve Time</div>
+                <div class="stat-value">${stats.today.avg_solve_time_today}s</div>
+                <div class="stat-label">Avg Solve Time Today</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value">${stats.overall.puzzles}</div>
                 <div class="stat-label">Total Puzzles</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">${stats.overall.avg_attempts}</div>
-                <div class="stat-label">Avg Attempts</div>
+                <div class="stat-value">${stats.overall.avg_solve_time_overall}s</div>
+                <div class="stat-label">Avg Overall Solve Time</div>
             </div>
         `;
     } catch (error) {
@@ -330,7 +359,28 @@ async function deletePuzzle(id) {
     if (!confirm('Delete this puzzle?')) return;
     try {
         const res = await apiFetch(`/api/puzzles/${id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error('Delete failed');
+        if (!res.ok) {
+            if (res.status === 401) {
+                // Try to refresh token and retry the delete
+                try {
+                    await fetchToken();
+                    const retryRes = await apiFetch(`/api/puzzles/${id}`, { method: 'DELETE' });
+                    if (retryRes.ok) {
+                        await loadPuzzles();
+                        await loadStats();
+                        showMessage('Puzzle deleted');
+                        return;
+                    } else {
+                        showMessage('Failed to delete after token refresh', 'error');
+                        return;
+                    }
+                } catch (retryError) {
+                    showMessage('Token expired. Failed to refresh token automatically.', 'error');
+                    return;
+                }
+            }
+            throw new Error('Delete failed');
+        }
         await loadPuzzles();
         await loadStats();
         showMessage('Puzzle deleted');
@@ -399,7 +449,35 @@ function setupFormHandlers() {
                 loadStats();
                 loadPuzzles();
             } else {
-                showMessage(result.error || 'Request failed', 'error');
+                // Check for token expired (401) or other auth errors
+                if (response.status === 401 || (result.error && result.error.includes('Token expired'))) {
+                    // Try to refresh token and retry the request
+                    try {
+                        await fetchToken();
+                        // Retry the request with new token
+                        const retryResponse = await apiFetch(url, {
+                            method,
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(puzzleData)
+                        });
+                        
+                        if (retryResponse.ok) {
+                            showMessage(isEditing ? 'Puzzle updated successfully!' : 'Puzzle created successfully!');
+                            form.reset();
+                            delete form.dataset.editId;
+                            initializeClues();
+                            loadStats();
+                            loadPuzzles();
+                        } else {
+                            const retryResult = await retryResponse.json();
+                            showMessage(retryResult.error || 'Request failed after token refresh', 'error');
+                        }
+                    } catch (retryError) {
+                        showMessage('Token expired. Failed to refresh token automatically.', 'error');
+                    }
+                } else {
+                    showMessage(result.error || 'Request failed', 'error');
+                }
             }
         } catch (error) {
             showMessage('Error saving puzzle: ' + error.message, 'error');
